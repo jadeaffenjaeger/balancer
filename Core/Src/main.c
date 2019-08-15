@@ -56,6 +56,7 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
+#include "angle.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -138,8 +139,17 @@ int main(void)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
     HAL_Delay(100);
-    angle_update(HAL_GetTick());
-    //sensor_calibrate();
+    struct vec3 * angles = angle_update(HAL_GetTick());
+
+    char strbuffer[256];
+    snprintf(strbuffer, 256, 
+        "%f,%f,%f\r\n", 
+        angles->x,
+        angles->y,
+        angles->z
+    );
+
+    CDC_Transmit_FS(strbuffer, strlen(strbuffer));
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

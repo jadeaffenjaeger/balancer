@@ -4,14 +4,17 @@
 
 static enum sensor_state state = IDLE;
 static struct sensor_values values;
-static uint8_t buffer[14];
+static volatile uint8_t buffer[14];
 const static struct vec3 gyro_bias = {27.751366, -0.833710, -2.247824};
 
 /* Read sensor data over I2C*/
-struct sensor_values * sensor_update() {
-    HAL_I2C_Mem_Read_DMA(&hi2c1, MPU6050_ADDRESS_AD0_LOW << 1, MPU6050_RA_ACCEL_XOUT_H, I2C_MEMADD_SIZE_8BIT, &buffer, sizeof(buffer));
+struct sensor_values * sensor_getValues() {
     sensor_parse();
     return &values;
+}
+
+void sensor_read() {
+    HAL_I2C_Mem_Read_DMA(&hi2c1, MPU6050_ADDRESS_AD0_LOW << 1, MPU6050_RA_ACCEL_XOUT_H, I2C_MEMADD_SIZE_8BIT, &buffer, sizeof(buffer));
 }
 
 /* Turn sensor output into g and deg/s */
@@ -34,8 +37,43 @@ void sensor_parse() {
 
 /* Power on sensor and do initial setup*/
 void sensor_init() {
+
+    /* Use Gyro as clock source to turn MPU on*/
     uint8_t buf = MPU6050_CLOCK_PLL_XGYRO;
     if (HAL_I2C_Mem_Write(&hi2c1, MPU6050_ADDRESS_AD0_LOW << 1, MPU6050_RA_PWR_MGMT_1, I2C_MEMADD_SIZE_8BIT, &buf, 1, 100) != HAL_OK) {
+        Error_Handler();
+    }
+
+    /* Use internal filter at 5Hz*/
+    buf = MPU6050_DLPF_BW_5;
+    if (HAL_I2C_Mem_Write(&hi2c1, MPU6050_ADDRESS_AD0_LOW << 1, MPU6050_RA_CONFIG, I2C_MEMADD_SIZE_8BIT, &buf, 1, 100) != HAL_OK) {
+        Error_Handler();
+    }
+    
+    /* Manually clear Interrupt*/
+    buf = 1 << MPU6050_INTCFG_LATCH_INT_EN_BIT;
+    if (HAL_I2C_Mem_Write(&hi2c1, MPU6050_ADDRESS_AD0_LOW << 1, MPU6050_RA_INT_PIN_CFG, I2C_MEMADD_SIZE_8BIT, &buf, 1, 100) != HAL_OK) {
+        Error_Handler();
+    }
+
+    /* Set sample rate to 50Hz*/
+    buf = 19;
+    if (HAL_I2C_Mem_Write(&hi2c1, MPU6050_ADDRESS_AD0_LOW << 1, MPU6050_RA_SMPLRT_DIV,  I2C_MEMADD_SIZE_8BIT, &buf, 1, 100) != HAL_OK) {
+        Error_Handler();
+    }
+
+    /* Enable data ready interrupt*/
+    buf = 1 << MPU6050_INTERRUPT_DATA_RDY_BIT;
+    if (HAL_I2C_Mem_Write(&hi2c1, MPU6050_ADDRESS_AD0_LOW << 1, MPU6050_RA_INT_ENABLE, I2C_MEMADD_SIZE_8BIT, &buf, 1, 100) != HAL_OK) {
+        Error_Handler();
+    }
+    sensor_clearIRQ();
+}
+
+sensor_clearIRQ() {
+    uint8_t buf = 0;
+    /* Clear IRQ by reading status register*/
+    if (HAL_I2C_Mem_Read(&hi2c1, MPU6050_ADDRESS_AD0_LOW << 1, MPU6050_RA_INT_STATUS, I2C_MEMADD_SIZE_8BIT, &buf, 1, 100) != HAL_OK) {
         Error_Handler();
     }
 }
@@ -47,7 +85,8 @@ void sensor_calibrate() {
     double gz = 0.0;
 
     for(uint32_t i = 0; i < 1000; i++) {
-        sensor_update();
+        sensor_read();
+        sensor_parse();
         gx += values.gyro.x;
         gy += values.gyro.y;
         gz += values.gyro.z;

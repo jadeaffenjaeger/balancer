@@ -14,7 +14,8 @@ struct sensor_values {
 };
 
 void sensor_parse();
-struct sensor_values * sensor_update();
+struct sensor_values * sensor_getValues();
+void sensor_read();
 void sensor_init();
 
 #endif // SENSOR_H_

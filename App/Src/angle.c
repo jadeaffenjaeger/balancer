@@ -19,7 +19,7 @@ struct vec3 * angle_update(uint32_t tick) {
     /* Calculate time since last measurement*/
     const float TICKS_PER_SECOND = 1000.0;
     static uint32_t last_tick = 0;
-    struct sensor_values * raw_data = sensor_update();
+    struct sensor_values * raw_data = sensor_getValues();
     float dt_s = (tick - last_tick) / TICKS_PER_SECOND;
     last_tick = tick;
 

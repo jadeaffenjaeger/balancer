@@ -1,5 +1,6 @@
 #ifndef ANGLE_H_
 #define ANGLE_H_ 
+#include "vec3.h"
 
-void angle_update(uint32_t tick);
+struct vec3 * angle_update(uint32_t tick);
 #endif
