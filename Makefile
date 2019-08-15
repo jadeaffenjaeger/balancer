@@ -36,6 +36,8 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
+App/Src/sensor.c \
+App/Src/angle.c \
 Core/Src/main.c \
 Core/Src/gpio.c \
 Core/Src/dma.c \
@@ -129,6 +131,7 @@ AS_INCLUDES =
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
+-IApp/Inc \
 -IUSB_DEVICE/App \
 -IUSB_DEVICE/Target \
 -IDrivers/STM32F1xx_HAL_Driver/Inc \
@@ -163,7 +166,7 @@ LDSCRIPT = STM32F103C8Tx_FLASH.ld
 # libraries
 LIBS = -lc -lm -lnosys 
 LIBDIR = 
-LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections -u _printf_float
 
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
