@@ -14,14 +14,11 @@ static float angle_filter(float curr_ang, float acc_ang, float gyro, float dt);
 static struct vec3 angles = {0.0, 0.0, 0.0};
 
 /* Read sensor data and calculate new angles*/
-struct vec3 * angle_update(uint32_t tick) {
+struct vec3 * angle_update(uint32_t dt, const float TICKS_PER_SECOND) {
 
     /* Calculate time since last measurement*/
-    const float TICKS_PER_SECOND = 1000.0;
-    static uint32_t last_tick = 0;
     struct sensor_values * raw_data = sensor_getValues();
-    float dt_s = (tick - last_tick) / TICKS_PER_SECOND;
-    last_tick = tick;
+    float dt_s = dt / TICKS_PER_SECOND;
 
     /* Calculate angles according to accelerometers*/
     float acc_x = fast_atan2(raw_data->acc.y, raw_data->acc.z) * RAD_TO_DEG;
