@@ -57,6 +57,9 @@
 #include "usb_device.h"
 #include "gpio.h"
 #include "angle.h"
+#include "sensor.h"
+#include "pid.h"
+#include "motor.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -131,6 +134,24 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   sensor_init();
+  motor_init();
+  
+  uint32_t last_tick = HAL_GetTick();
+  const float TICKS_PER_SECOND = 1000.0;
+  static pidc_t pid = {
+    .kp = 1.0,
+    .ki = 0.0,
+    .kd = 0.0,
+
+    .outMax = 20.0,
+    .outMin = -20.0,
+    .direction = 1.0,
+
+    .last_measure = 0.0,
+    .err_sum = 0.0,
+    .set_point = 0.0
+  };
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -139,17 +160,23 @@ int main(void)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
     HAL_Delay(100);
-    struct vec3 * angles = angle_update(HAL_GetTick());
+    
+    uint32_t current_tick = HAL_GetTick();
+    uint32_t dt = current_tick - last_tick;
+    struct vec3 * angles = angle_update(dt, TICKS_PER_SECOND);
+    float output = pid_compute(&pid, angles->x, dt, TICKS_PER_SECOND);
+    int32_t remapped = motor_remap(output, pid.outMax);
 
     char strbuffer[256];
     snprintf(strbuffer, 256, 
-        "%f,%f,%f\r\n", 
+        "%f,%f,%d\r\n", 
         angles->x,
-        angles->y,
-        angles->z
+        output,
+        remapped
     );
 
     CDC_Transmit_FS(strbuffer, strlen(strbuffer));
+    last_tick = current_tick;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

@@ -38,6 +38,8 @@ BUILD_DIR = build
 C_SOURCES =  \
 App/Src/sensor.c \
 App/Src/angle.c \
+App/Src/pid.c \
+App/Src/motor.c \
 Core/Src/main.c \
 Core/Src/gpio.c \
 Core/Src/dma.c \
