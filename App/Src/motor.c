@@ -6,7 +6,7 @@
 extern TIM_HandleTypeDef htim2;
 
 const uint32_t MOTOR_MIN = 100;
-const uint32_t MOTOR_MAX = 1023;
+const uint32_t MOTOR_MAX = 1000;
 const float DEADBAND = 1.5;
 
 void motor_init()
@@ -40,7 +40,7 @@ int32_t motor_remap(float error, float err_max)
 // Write speed to PWM outputs
 void motor_setSpeed(int32_t output)
 {
-    if (output > 0)
+    if (output >= 0)
     {
         // 0 to CH1 and CH3
         __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
