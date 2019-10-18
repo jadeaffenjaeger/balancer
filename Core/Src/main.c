@@ -166,6 +166,7 @@ int main(void)
     struct vec3 * angles = angle_update(dt, TICKS_PER_SECOND);
     float output = pid_compute(&pid, angles->x, dt, TICKS_PER_SECOND);
     int32_t remapped = motor_remap(output, pid.outMax);
+    motor_setSpeed(remapped);
 
     char strbuffer[256];
     snprintf(strbuffer, 256, 
