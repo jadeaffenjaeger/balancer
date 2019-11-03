@@ -144,7 +144,7 @@ int main(void)
 
     .outMax = 20.0,
     .outMin = -20.0,
-    .direction = 1.0,
+    .direction = -1.0,
 
     .last_measure = 0.0,
     .err_sum = 0.0,
@@ -158,19 +158,20 @@ int main(void)
   while (1)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-    HAL_Delay(100);
+    /* HAL_Delay(100);*/
     
     uint32_t current_tick = HAL_GetTick();
     uint32_t dt = current_tick - last_tick;
     struct vec3 * angles = angle_update(dt, TICKS_PER_SECOND);
-    float output = pid_compute(&pid, angles->x, dt, TICKS_PER_SECOND);
+    angles->y += 90;
+    float output = pid_compute(&pid, angles->y, dt, TICKS_PER_SECOND);
     int32_t remapped = motor_remap(output, pid.outMax);
     motor_setSpeed(remapped);
 
     char strbuffer[256];
     snprintf(strbuffer, 256,
         "%f,%f,%d\r\n",
-        angles->x,
+        angles->y,
         output,
         remapped
     );
