@@ -56,14 +56,13 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
-#include "angle.h"
-#include "sensor.h"
-#include "pid.h"
-#include "motor.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "motor.h"
+#include "pid.h"
+#include "angle.h"
+#include "sensor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -135,7 +134,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   sensor_init();
   motor_init();
-  
+
   uint32_t last_tick = HAL_GetTick();
   const float TICKS_PER_SECOND = 1000.0;
   static pidc_t pid = {
@@ -169,8 +168,8 @@ int main(void)
     motor_setSpeed(remapped);
 
     char strbuffer[256];
-    snprintf(strbuffer, 256, 
-        "%f,%f,%d\r\n", 
+    snprintf(strbuffer, 256,
+        "%f,%f,%d\r\n",
         angles->x,
         output,
         remapped

@@ -11,8 +11,13 @@ const float DEADBAND = 1.5;
 
 void motor_init()
 {
+
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
+
     motor_setSpeed(0);
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_ALL); 
 }
 
 int32_t motor_remap(float error, float err_max)
