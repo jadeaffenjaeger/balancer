@@ -1,13 +1,12 @@
 #ifndef MOTOR_H_
 #define MOTOR_H_
 
-#define MOTOR_L_DIR 1
-#define MOTOR_R_DIR 1
-
-//PWM limit at which the motor spins reliably
-#define LOWER_LIMIT 35
+typedef enum {
+    MOTOR_LEFT,
+    MOTOR_RIGHT
+} motor_t;
 
 void motor_init();
-int32_t motor_remap(float error, float err_max);
-void motor_setSpeed(int32_t speed);
+int32_t motor_remap(motor_t side, float error, float err_max);
+void motor_setSpeed(motor_t side, int32_t output);
 #endif

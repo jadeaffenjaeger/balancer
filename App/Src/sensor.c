@@ -5,7 +5,7 @@
 static enum sensor_state state = IDLE;
 static struct sensor_values values;
 static volatile uint8_t buffer[14];
-const static struct vec3 gyro_bias = {27.751366, -0.833710, -2.247824};
+const static struct vec3 gyro_bias = {-27.751366, 0.833710, 2.247824};
 
 /* Read sensor data over I2C*/
 struct sensor_values * sensor_getValues() {
@@ -30,9 +30,9 @@ void sensor_parse() {
     values.gyro.z = ((float) (int16_t) (buffer[12]  << 8 | buffer[13]))  / 131.0;
 
     /* Compensate for Gyro drift*/
-    values.gyro.x -= gyro_bias.x;
-    values.gyro.y -= gyro_bias.y;
-    values.gyro.z -= gyro_bias.z;
+    values.gyro.x += gyro_bias.x;
+    values.gyro.y += gyro_bias.y;
+    values.gyro.z += gyro_bias.z;
 }
 
 /* Power on sensor and do initial setup*/
@@ -84,6 +84,12 @@ void sensor_calibrate() {
     double gy = 0.0;
     double gz = 0.0;
 
+    char strbuffer[256];
+
+    snprintf(strbuffer, 256, 
+        "Calibrating. Keep steady.\r\n" 
+    );
+
     for(uint32_t i = 0; i < 1000; i++) {
         sensor_read();
         sensor_parse();
@@ -98,7 +104,6 @@ void sensor_calibrate() {
     gy /= 1000.0;
     gz /= 1000.0;
 
-    char strbuffer[256];
     snprintf(strbuffer, 256, 
         "Gyro Bias Values: %f,%f,%f\r\n", 
         gx,

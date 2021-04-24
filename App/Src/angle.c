@@ -26,11 +26,11 @@ struct vec3 * angle_update(uint32_t dt, const float TICKS_PER_SECOND) {
     float acc_z = fast_atan2(raw_data->acc.x, raw_data->acc.y) * RAD_TO_DEG;
 
     angles.x = fast_atan2(raw_data->acc.y, raw_data->acc.z) * RAD_TO_DEG;
-    angles.y = fast_atan2(raw_data->acc.x, raw_data->acc.z) * RAD_TO_DEG;
-    angles.z = fast_atan2(raw_data->acc.x, raw_data->acc.y) * RAD_TO_DEG;
+    /* angles.y = fast_atan2(raw_data->acc.x, raw_data->acc.z) * RAD_TO_DEG;*/
+    /* angles.z = fast_atan2(raw_data->acc.x, raw_data->acc.y) * RAD_TO_DEG;*/
 
     /* Smooth Accelerometer data with Gyros*/
-    //angles.x = angle_filter(angles.x, acc_x, -raw_data->gyro.x, dt_s);
+    angles.x = angle_filter(angles.x, acc_x, -raw_data->gyro.x, dt_s);
     //angles.y = angle_filter(angles.y, acc_y, raw_data->gyro.y, dt_s);
     //angles.z = angle_filter(angles.z, acc_z, -raw_data->gyro.z, dt_s);
 

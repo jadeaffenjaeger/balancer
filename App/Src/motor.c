@@ -5,65 +5,67 @@
 
 extern TIM_HandleTypeDef htim2;
 
-const uint32_t MOTOR_MIN = 100;
+const uint32_t MOTOR_RIGHT_MIN = 350;
+const uint32_t MOTOR_LEFT_MIN = 300;
 const uint32_t MOTOR_MAX = 1000;
-const float DEADBAND = 1.5;
 
 void motor_init()
 {
-
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 
-    motor_setSpeed(0);
+    motor_setSpeed(MOTOR_LEFT, 0);
+    motor_setSpeed(MOTOR_RIGHT, 0);
 }
 
-int32_t motor_remap(float error, float err_max)
+int32_t motor_remap(motor_t side, float error, float err_max)
 {
-    // Turn motors off when error is sufficiently small
-    if (-DEADBAND < error && error < DEADBAND)
-    {
+    if (error == 0) {
         return 0;
     }
 
-    // Scale to -1 ... 1
-    error /= err_max;
+    uint32_t motor_min_pwm;
+    if (side == MOTOR_RIGHT) {
+        motor_min_pwm = MOTOR_RIGHT_MIN;
+    } else {
+        motor_min_pwm = MOTOR_LEFT_MIN;
+    }
 
-    float output = error * (float)(MOTOR_MAX - MOTOR_MIN);
-    //output = round(output);
+    /* Rescale error to motor dynamic range*/
+    float output = error * ((float)(MOTOR_MAX - motor_min_pwm)/err_max);
 
     if (error < 0) {
-        return ((int32_t) output) - MOTOR_MIN;
+        return ((int32_t) output) - motor_min_pwm;
     } else {
-        return ((int32_t) output) + MOTOR_MIN;
+        return ((int32_t) output) + motor_min_pwm;
     }
 
 }
 
 // Write speed to PWM outputs
-void motor_setSpeed(int32_t output)
+void motor_setSpeed(motor_t side, int32_t output)
 {
     if (output >= 0)
     {
-        // 0 to CH1 and CH3
-        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
-
-        // output to CH2 and CH4
-        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, output);
-        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, output);
+        if (side == MOTOR_RIGHT) {
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, output);
+        } else {
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, output);
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
+        }
     }
-    else
+    else 
     {
-        // Inverted output to CH1 and CH3
         output = -output;
-        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, output);
-        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, output);
-
-        // 0 to CH2 and CH4
-        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
+        if (side == MOTOR_RIGHT) {
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, output);
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
+        } else {
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, output);
+        }
     }
 }

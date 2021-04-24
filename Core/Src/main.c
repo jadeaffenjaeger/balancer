@@ -50,6 +50,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "dma.h"
 #include "i2c.h"
 #include "tim.h"
@@ -63,6 +64,7 @@
 #include "pid.h"
 #include "angle.h"
 #include "sensor.h"
+#include "knob.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -106,7 +108,6 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
-  
 
   /* MCU Configuration--------------------------------------------------------*/
 
@@ -131,16 +132,21 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM2_Init();
   MX_USB_DEVICE_Init();
+  MX_ADC1_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-  sensor_init();
+  HAL_Delay(10);
   motor_init();
+  sensor_init();
 
   uint32_t last_tick = HAL_GetTick();
+  uint32_t last_dbg_tick = HAL_GetTick();
   const float TICKS_PER_SECOND = 1000.0;
   static pidc_t pid = {
-    .kp = 1.0,
+    .kp = 4.25,
     .ki = 0.0,
-    .kd = 0.0,
+    .kd = 0.30,
 
     .outMax = 20.0,
     .outMin = -20.0,
@@ -148,8 +154,15 @@ int main(void)
 
     .last_measure = 0.0,
     .err_sum = 0.0,
-    .set_point = 0.0
+    .set_point = -0.8
   };
+
+  static knob_t knob1 = {
+    .min = 0,
+    .max = 22
+  };
+
+  knob_init(&knob1);
 
   /* USER CODE END 2 */
 
@@ -157,27 +170,50 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-    /* HAL_Delay(100);*/
+    /* HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);*/
+    /* HAL_Delay(25);*/
     
+    float adc_value = knob_read(&knob1);
+    pid.kp = adc_value;
+
     uint32_t current_tick = HAL_GetTick();
     uint32_t dt = current_tick - last_tick;
+    if (dt < 3) {
+        continue;
+    }
+
     struct vec3 * angles = angle_update(dt, TICKS_PER_SECOND);
-    angles->y += 90;
-    float output = pid_compute(&pid, angles->y, dt, TICKS_PER_SECOND);
-    int32_t remapped = motor_remap(output, pid.outMax);
-    motor_setSpeed(remapped);
+    float output = pid_compute(&pid, angles->x, dt, TICKS_PER_SECOND);
 
-    char strbuffer[256];
-    snprintf(strbuffer, 256,
-        "%f,%f,%d\r\n",
-        angles->y,
-        output,
-        remapped
-    );
+    int32_t remapped_r = motor_remap(MOTOR_RIGHT, output, pid.outMax);
+    int32_t remapped_l = motor_remap(MOTOR_LEFT, output, pid.outMax);
 
-    CDC_Transmit_FS(strbuffer, strlen(strbuffer));
+    /* uint32_t motor_speed = (uint32_t) adc_value;*/
+    /* motor_setSpeed(motor_speed);*/
+
+    if (angles->x < -30.0 || angles->x > 30.0) {
+        motor_setSpeed(MOTOR_LEFT, 0);
+        motor_setSpeed(MOTOR_RIGHT, 0);
+    } else {
+        motor_setSpeed(MOTOR_RIGHT, remapped_r);
+        motor_setSpeed(MOTOR_LEFT, remapped_l);
+    }
+
     last_tick = current_tick;
+
+    if (current_tick - last_dbg_tick >= 100) {
+        char strbuffer[256];
+        snprintf(strbuffer, 256,
+            "%f,%f,%d,%d\r\n",
+            angles->x,
+            output,
+            remapped_l,
+            remapped_r
+        );
+        CDC_Transmit_FS(strbuffer, strlen(strbuffer));
+        last_dbg_tick = current_tick;
+    }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
